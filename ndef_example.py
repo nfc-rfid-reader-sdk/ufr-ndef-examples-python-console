@@ -19,7 +19,11 @@ if sys.platform.startswith('win'):
     elif platform.architecture()[0] == '64bit':
         uFR = ctypes.windll.LoadLibrary("ufr-lib//windows//x86_64//uFCoder-x86_64.dll")
 elif sys.platform.startswith('linux'):
-    uFR = cdll.LoadLibrary("ufr-lib//linux//x86//libuFCoder-x86.so")
+    if platform.architecture()[0] == '32bit': # used for specifying lib for OS version, 32/64bit
+        uFR = cdll.LoadLibrary("ufr-lib//linux//x86//libuFCoder-x86.so")
+    elif platform.architecture()[0] == '64bit':
+        uFR = cdll.LoadLibrary("ufr-lib//linux//x86_64//libuFCoder-x86_64.so")
+    
 elif sys.platform.startswith('darwin'):
     uFR = cdll.LoadLibrary("ufr-lib//macos//x86_64//libuFCoder-x86_64.dylib")
 ##########################################################################
@@ -160,7 +164,7 @@ if __name__ == '__main__':
     
     usage()    
     if sys.platform.startswith('win'):
-        print("press ESC to exit.")
+        print("press ESC and hit enter to exit.")
     else:
         print("press ESC and hit enter to exit.")
     

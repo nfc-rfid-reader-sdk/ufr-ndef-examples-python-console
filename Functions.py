@@ -159,6 +159,8 @@ def ndefWriteRecords():
     print("   (1) - Phone ")
     print("   (2) - SMS ")
     print("   (3) - URI ")
+    print("   (4) - vCard ")
+    print("   (5) - Bluetooth")
 
     choice = input()
     choice = int(choice)
@@ -267,6 +269,163 @@ def ndefWriteRecords():
         writeNdefFunc.argtypes =[c_ubyte,  POINTER(c_ubyte),POINTER(c_ubyte) , POINTER(c_ubyte),
         (c_ubyte*2), POINTER(c_ubyte), (c_ubyte*payload_length.value), POINTER(c_uint32), POINTER(c_ubyte)]
         status = writeNdefFunc(message_nr, byref(tnf), byref(type_record), byref(
+        type_length), id, byref(id_length), payload, byref(payload_length), byref(card_formatted))
+        if status == 0:
+            print("URI NDEF written successfully.")
+            print("Status: " + ErrorCodes.UFCODER_ERROR_CODES[status])
+        else:
+            print("URI NDEF write failed.")
+            print("Status: " + ErrorCodes.UFCODER_ERROR_CODES[status])
+    elif choice == 4:
+        print("vCard")
+        print("Enter Display Name (*Required field*):")
+        vDisplayName = input()
+        if vDisplayName == "":
+            print("Display name is a required field, please enter it again:")
+            vDisplayName = input()
+            if vDisplayName == "":
+                print("vCard NDEF creation failed, please try again. Returning to main...")
+                return
+        print("Enter Last Name (*Required field*):")
+        vLastName = input()
+        if vLastName == "":
+            print("Last name is a required field, please enter it again:")
+            vLastName = input()
+            if vLastName == "":
+                print("vCard NDEF creation failed, please try again. Returning to main...")
+                return
+        print("Enter First Name (*Optional*):")
+        vFirstName = input()
+        print("Enter Bussiness Phone (*Optional*):")
+        vBussinessPhone = input()
+        print("Enter Cell Phone (*Optional*):")
+        vCellPhone = input()
+        print("Enter Private Phone (*Optional*):")
+        vPrivatePhone = input()
+        print("Enter Bussiness E-mail (*Optional*):")
+        vBussinessEmail = input()
+        print("Enter Private E-mail (*Optional*):")
+        vPrivateEmail = input()
+        print("Enter Title (*Optional*):")
+        vTitle = input()
+        print("Enter Company name (*Optional*):")
+        vCompanyName = input()
+        print("Enter Website URL (*Optional*):")
+        vWebsiteURL = input()
+        print("Enter Skype Name (*Optional*):")
+        vSkypeName = input()
+
+    #format NDEF payload for vCard 3.0
+
+        tmp_str = "BEGIN:VCARD\r\n"
+        tmp_str += "VERSION:3.0\r\n"
+        tmp_str += "N:" + vLastName + ";"
+        tmp_str += vFirstName + ";;;\r\n"
+        tmp_str += "FN:" + vDisplayName + "\r\n"
+
+        if len(vCellPhone) != 0:
+            tmp_str += "TEL;CELL:" + vCellPhone + "\r\n"
+        if len(vBussinessPhone) != 0:
+            tmp_str += "TEL;WORK:" + vBussinessPhone + "\r\n"
+        if len(vPrivatePhone) != 0:
+            tmp_str += "TEL;HOME:" + vPrivatePhone + "\r\n"
+        if len(vBussinessEmail) != 0:
+            tmp_str += "EMAIL;WORK:" + vBussinessEmail + "\r\n"
+        if len(vPrivateEmail) != 0:
+            tmp_str += "EMAIL;HOME:" + vPrivateEmail + "\r\n"
+        if len(vTitle) != 0:
+            tmp_str += "TITLE:" + vTitle + "\r\n"
+        if len(vCompanyName) != 0:
+            tmp_str += "ORG:" + vCompanyName + "\r\n"
+        if len(vWebsiteURL) != 0:
+            tmp_str += "URL:" + vWebsiteURL + "\r\n"
+        if len(vSkypeName) != 0:
+            tmp_str += "X-SKYPE:" + vSkypeName + "\r\n"
+        tmp_str += "END:VCARD"
+        print("vCard length = " + str(len(tmp_str)))
+
+        # vCard TNF=2, Type = Mime = "text/x-vCard", Type length=12
+        payload_length = len(tmp_str)
+        tmp_payload = (c_ubyte*payload_length)()
+        tmp_payload = tmp_str.encode('utf-8') # string to array conversion
+        payload = (c_ubyte*payload_length)()
+        #payload[0] = 1       
+        for x in range(0, payload_length):           
+            payload[x] = tmp_payload[x]
+        payload_length = c_uint32(len(payload))
+        
+
+        type_record_str = "text/x-vCard"
+        type_length = c_ubyte(len(type_record_str))
+        tmp_type = (c_ubyte * type_length.value)()
+        tmp_type = type_record_str.encode('utf-8')
+        type_record = (c_ubyte*type_length.value)()
+        for x in range(type_length.value):
+            type_record[x] = tmp_type[x]
+        
+        message_nr = c_ubyte(1)
+        tnf  = c_ubyte(2)
+        id = (c_ubyte*2)()
+        id_length = c_ubyte(0)        
+        card_formatted = c_ubyte()
+
+        writeNdefFunc = uFR.write_ndef_record
+        writeNdefFunc.argtypes =[c_ubyte,  POINTER(c_ubyte),(c_ubyte*type_length.value) , POINTER(c_ubyte),
+        (c_ubyte*2), POINTER(c_ubyte), (c_ubyte*payload_length.value), POINTER(c_uint32), POINTER(c_ubyte)]
+        status = writeNdefFunc(message_nr, byref(tnf), type_record, byref(
+        type_length), id, byref(id_length), payload, byref(payload_length), byref(card_formatted))
+        if status == 0:
+            print("URI NDEF written successfully.")
+            print("Status: " + ErrorCodes.UFCODER_ERROR_CODES[status])
+        else:
+            print("URI NDEF write failed.")
+            print("Status: " + ErrorCodes.UFCODER_ERROR_CODES[status])
+
+    elif choice == 5:
+        print("Bluetooth")
+
+        print("Enter Bluetooth address(*6 hexadecimal numbers*):")
+        bl_address = input()
+        if len(bl_address) != 12:
+            print("You must enter 6 hexadecimal numbers!")
+            bl_address = input()
+            if len(bl_address) != 12:
+               print("Bluetooth NDEF creation failed, please try again. Returning to main...")
+               return
+        payload_length = len(bl_address) + 2
+        tmp_payload = (c_ubyte*payload_length)()
+        tmp_payload = bl_address.encode('utf-8')
+        payload = (c_ubyte*8)()
+        payload[0] = c_ubyte(0)
+        payload[1] = c_ubyte(8)
+        for x in range(2, payload_length, 2):
+            temp = int(tmp_payload[x-2:x], 16)
+            y = int((x+2)/2)
+            payload[y] = temp
+        
+        payload_length = c_uint32(8) 
+        # bluetooth NDEF len 6 bytes + 2 for payload [0] and [1] preset bytes
+
+        type_record_str = "application/vnd.bluetooth.ep.oob"
+        type_length = len(type_record_str)
+        tmp_type = (c_ubyte*type_length)()
+        tmp_type = type_record_str.encode('utf-8')
+        type_record = (c_ubyte*type_length)()
+        for x in range(type_length):
+            type_record[x] = tmp_type[x]
+            #print(type_record[x])
+           
+        type_length = c_ubyte(type_length)
+        message_nr = c_ubyte(1)
+        tnf = c_ubyte(2)
+        id = (c_ubyte*2)()
+        id_length = c_ubyte(0)
+        card_formatted = c_ubyte()
+
+        writeNdefFunc = uFR.write_ndef_record
+        writeNdefFunc.argtypes =[c_ubyte,  POINTER(c_ubyte),(c_ubyte*type_length.value) , POINTER(c_ubyte),
+        (c_ubyte*2), POINTER(c_ubyte), (c_ubyte*8), POINTER(c_uint32), POINTER(c_ubyte)]
+        status = writeNdefFunc(message_nr, byref(tnf), type_record, byref(
         type_length), id, byref(id_length), payload, byref(payload_length), byref(card_formatted))
         if status == 0:
             print("URI NDEF written successfully.")
